@@ -2,9 +2,14 @@
 #include <Adafruit_Sensor.h>
 #include <Adafruit_TSL2561_U.h>
 #include <Adafruit_BMP085_U.h>
+#include <DHT.h>
+#include <DHT_U.h>
+
 
 Adafruit_TSL2561_Unified tsl = Adafruit_TSL2561_Unified(TSL2561_ADDR_FLOAT, 12345);
 Adafruit_BMP085_Unified bmp = Adafruit_BMP085_Unified(10085);
+DHT_Unified dht(2, DHT22);
+uint32_t delayMS;
 
 void setup() {
   Serial.begin(9600);
@@ -26,7 +31,11 @@ void setup() {
     Serial.print("Ooops, no BMP085 detected ... Check your wiring or I2C ADDR!");
     while(1);
   }
-  
+
+  sensor_t sensor;
+  dht.temperature().getSensor(&sensor);
+  dht.humidity().getSensor(&sensor);
+  delayMS = sensor.min_delay / 1000;
 }
 
 void loop() {
@@ -77,12 +86,37 @@ void loop() {
     Serial.print(bmp.pressureToAltitude(seaLevelPressure,
                                         event.pressure)); 
     Serial.println(" m");
-    Serial.println("");
+    
   }
   else
   {
     Serial.println("Sensor error");
   }
+
+  dht.temperature().getEvent(&event);
+  if (isnan(event.temperature)) {
+    Serial.println("Error reading temperature!");
+  }
+  else {
+    Serial.print("Temperature: ");
+    Serial.print(event.temperature);
+    Serial.println(" *C");
+  }
   
-  delay(500);
+  dht.humidity().getEvent(&event);
+  if (isnan(event.relative_humidity)) {
+    Serial.println("Error reading humidity!");
+  }
+  else {
+    Serial.print("Humidity: ");
+    Serial.print(event.relative_humidity);
+    Serial.println("%");
+  }
+
+  Serial.println("");
+  
+  if (delayMS > 500)
+    delay(delayMS);
+  else
+    delay(500);
 }
